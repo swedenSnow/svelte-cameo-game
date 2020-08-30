@@ -1,0 +1,10 @@
+{
+		"tabWidth": 4,
+		"semi": true,
+		"singelQuote": true,
+		"trainlingComma": "es5",
+		"plugins": [
+			"svelte"
+		],
+		"svelteSortOrder": "scripts-markup-styles"
+	}
