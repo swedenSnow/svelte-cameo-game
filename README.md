@@ -42,4 +42,4 @@ If you're building a single-page app (SPA) with multiple routes, sirv needs to b
 ## Checkout webb or as PWA
 Hosted via [Vercel](https://vercel.com/)
 
-https://cameoparison.vercel.app/
+[Game](https://cameoparison.vercel.app/)
