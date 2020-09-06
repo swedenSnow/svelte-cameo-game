@@ -29,8 +29,8 @@
         data.forEach((c) => {
             lookup.set(c.id, c);
         });
-        console.log(lookup);
-        console.log(data);
+        // console.log(lookup);
+        // console.log(data);
         //! celebs we will have for the game
         const subset = new Set();
         data.forEach((c) => {
@@ -41,7 +41,7 @@
                 });
             }
         });
-        console.log(subset);
+        // console.log(subset);
         return {
             celebs: Array.from(subset),
             lookup,
