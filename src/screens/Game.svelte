@@ -73,10 +73,7 @@
   {#if done}
     <p>Round done</p>
   {:else}
-    <p>
-      Tap on the more monetisable celebrity's face, or tap 'same price' if
-      society values them equally.
-    </p>
+    <p>↓</p>
   {/if}
 </header>
 
@@ -92,6 +89,12 @@
     </div>
   {:else if ready}
     {#await promises[i] then [a, b]}
+      <p
+        in:fly={{ duration: 400, x: 100 }}
+        out:fly={{ duration: 200, x: -100 }}>
+        Tap on the more monetisable celebrity's face, or tap 'same price' if
+        society values them equally.
+      </p>
       <div
         class="game"
         in:fly={{ duration: 200, y: 20 }}
