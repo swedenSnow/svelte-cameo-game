@@ -1,16 +1,28 @@
 <script>
+  import { createEventDispatcher } from "svelte";
+  import { fly, scale, crossfade } from "svelte/transition";
+  import * as eases from "svelte/easing";
   import Card from "../components/Card.svelte";
-  import { sleep } from "../utils";
+  import { sleep, pick_random, load_image } from "../utils";
 
   export let selection;
+
+  const dispatch = createEventDispatcher();
+
+  const [send, receive] = crossfade({
+    easing: eases.cubicOut,
+    duration: 300,
+  });
 
   const load_details = async (celeb) => {
     const res = await fetch(
       `https://cameo-explorer.netlify.app/celebs/${celeb.id}.json`
     );
-    return await res.json();
+    const details = await res.json();
+    await load_image(details.image);
+    return details;
   };
-  // console.log(selection);
+
   const promises = selection.map((round) =>
     Promise.all([load_details(round.a), load_details(round.b)])
   );
@@ -19,6 +31,26 @@
 
   let last_result;
   let i = 0;
+  let done = false;
+  let ready = true;
+
+  $: score = results.filter((x) => x === "right").length;
+
+  const pick_message = (p) => {
+    if (p <= 0.2)
+      return pick_random([
+        `Oouf. That was terrible 😱`,
+        `Better luck next time? 🤬`,
+      ]);
+    if (p <= 0.5) return pick_random([`I've seen worse 😏`, `Keep trying 🔨!`]);
+    if (p <= 0.8)
+      return pick_random([
+        `Yeah! Not to shabby 🤓`,
+        `Not bad. Practice makes perfect 🥋`,
+      ]);
+    if (p < 1) return pick_random([`Impressive 🦾.`]);
+    return pick_random([`Flawless victory 🤘`, `Top marks 🔥`]);
+  };
 
   const submit = async (a, b, sign) => {
     last_result = Math.sign(a.price - b.price) === sign ? "right" : "wrong";
@@ -26,43 +58,74 @@
 
     results[i] = last_result;
     last_result = null;
+
+    await sleep(500);
     if (i < selection.length - 1) {
       i += 1;
     } else {
-      // TODO end the game
+      // end the game
+      done = true;
     }
   };
 </script>
 
 <header>
-  <p>
-    Tap on the more monetisable celebrity's face, or tap 'same price' if society
-    values them equally.
-  </p>
+  {#if done}
+    <p>Round done</p>
+  {:else}
+    <p>
+      Tap on the more monetisable celebrity's face, or tap 'same price' if
+      society values them equally.
+    </p>
+  {/if}
 </header>
 
 <div class="game-container">
-  {#await promises[i] then [a, b]}
-    <div class="game">
-      <div class="card-container">
-        <Card on:select={() => submit(a, b, 1)} celeb={a} />
-      </div>
-      <div>
-        <button on:click={() => submit(a, b, 0)} class="same">
-          Same price
-        </button>
-      </div>
-      <div class="card-container">
-        <Card on:select={() => submit(a, b, -1)} celeb={b} />
-      </div>
+
+  {#if done}
+    <div class="done" in:scale={{delay: 200, duration: 800, easing: eases.elasticInOut}}>
+      <strong>{score}/{results.length}</strong>
+      <p>{pick_message(score / results.length)}</p>
+      <button on:click={() => dispatch('restart')}>Back to homescreen</button>
     </div>
-  {:catch}
-    <p class="error">Goosh! failed to load data 🧐</p>
-  {/await}
+  {:else if ready}
+    {#await promises[i] then [a, b]}
+      <div
+        class="game"
+        in:fly={{ duration: 200, y: 20 }}
+        out:fly={{ duration: 200, y: -20 }}
+        on:outrostart={() => (ready = false)}
+        on:outroend={() => (ready = true)}>
+        <div class="card-container">
+          <Card
+            on:select={() => submit(a, b, 1)}
+            celeb={a}
+            showprice={!!last_result}
+            winner={a.price >= b.price} />
+        </div>
+        <div>
+          <button on:click={() => submit(a, b, 0)} class="same">
+            Same price
+          </button>
+        </div>
+        <div class="card-container">
+          <Card
+            on:select={() => submit(a, b, -1)}
+            celeb={b}
+            showprice={!!last_result}
+            winner={b.price >= a.price} />
+        </div>
+      </div>
+    {:catch}
+      <p class="error">Goosh! failed to load data 🧐</p>
+    {/await}
+  {/if}
 </div>
 
 {#if last_result}
   <img
+    in:fly={{ x: 100, duration: 200 }}
+    out:send={{ key: i }}
     class="giant-result"
     alt="{last_result} answer"
     src="/icons/{last_result}.svg" />
@@ -70,10 +133,13 @@
 <div
   class="results"
   style="grid-template-columns: repeat({results.length}, 1fr)">
-  {#each results as result}
+  {#each results as result, i}
     <span class="result">
       {#if result}
-        <img alt="{result} answer" src="/icons/{result}.svg" />
+        <img
+          in:receive={{ key: i }}
+          alt="{result} answer"
+          src="/icons/{result}.svg" />
       {/if}
     </span>
   {/each}
@@ -138,6 +204,23 @@
     height: 100%;
     left: 0;
     top: 0;
+  }
+
+  .done {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    left: 0;
+    top: 0;
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .done strong {
+    font-size: 6em;
+    font-weight: 700;
   }
   @media (min-width: 640px) {
     .game {
