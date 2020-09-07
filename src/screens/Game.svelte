@@ -33,6 +33,7 @@
   let i = 0;
   let done = false;
   let ready = true;
+  let checked = false;
 
   $: score = results.filter((x) => x === "right").length;
 
@@ -73,12 +74,11 @@
   {#if done}
     <p>Round done</p>
   {:else}
-    <p>↓</p>
+    <button on:click={() => dispatch('restart')}>🔙</button>
   {/if}
 </header>
 
 <div class="game-container">
-
   {#if done}
     <div
       class="done"
@@ -89,12 +89,22 @@
     </div>
   {:else if ready}
     {#await promises[i] then [a, b]}
-      <p
+
+      <input
+        class:checked
+        bind:checked
+        name="intructions"
+        type="checkbox"
         in:fly={{ duration: 400, x: 100 }}
-        out:fly={{ duration: 200, x: -100 }}>
+        out:fly={{ duration: 200, x: -100 }} />
+      <label
+        in:fly={{ duration: 400, x: 100 }}
+        out:fly={{ duration: 200, x: -100 }}
+        for="intructions"
+        class:checked>
         Tap on the more monetisable celebrity's face, or tap 'same price' if
         society values them equally.
-      </p>
+      </label>
       <div
         class="game"
         in:fly={{ duration: 200, y: 20 }}
@@ -226,6 +236,19 @@
   .done strong {
     font-size: 6em;
     font-weight: 700;
+  }
+
+  .checked {
+    display: none;
+  }
+
+  label {
+    font-weight: 700;
+    margin: 1em 0;
+  }
+
+  header button {
+    display: flex;
   }
   @media (min-width: 640px) {
     .game {
