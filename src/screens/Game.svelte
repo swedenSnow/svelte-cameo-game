@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
-  import { fly, scale, crossfade } from "svelte/transition";
+  import { fly,slide, scale, crossfade } from "svelte/transition";
   import * as eases from "svelte/easing";
   import Card from "../components/Card.svelte";
   import { sleep, pick_random, load_image } from "../utils";
@@ -34,6 +34,7 @@
   let done = false;
   let ready = true;
   let checked = false;
+  let choicesActive = true;
 
   $: score = results.filter((x) => x === "right").length;
 
@@ -54,6 +55,7 @@
   };
 
   const submit = async (a, b, sign) => {
+    choicesActive = false;
     last_result = Math.sign(a.price - b.price) === sign ? "right" : "wrong";
     await sleep(1500);
 
@@ -63,6 +65,7 @@
     await sleep(500);
     if (i < selection.length - 1) {
       i += 1;
+      choicesActive = true;
     } else {
       // end the game
       done = true;
@@ -76,6 +79,20 @@
   {:else}
     <button on:click={() => dispatch('restart')}>🔙</button>
   {/if}
+  {#if !checked}
+        <div out:slide={{duration:400}}>
+          <input 
+            bind:checked
+            name="intructions"
+            type="checkbox" />
+          <label
+            for="intructions"
+            >
+            Tap on the more monetisable celebrity's face, or tap 'same price' if
+            society values them equally.
+          </label>
+        </div>
+      {/if}
 </header>
 
 <div class="game-container">
@@ -89,22 +106,6 @@
     </div>
   {:else if ready}
     {#await promises[i] then [a, b]}
-
-      <input
-        class:checked
-        bind:checked
-        name="intructions"
-        type="checkbox"
-        in:fly={{ duration: 400, x: 100 }}
-        out:fly={{ duration: 200, x: -100 }} />
-      <label
-        in:fly={{ duration: 400, x: 100 }}
-        out:fly={{ duration: 200, x: -100 }}
-        for="intructions"
-        class:checked>
-        Tap on the more monetisable celebrity's face, or tap 'same price' if
-        society values them equally.
-      </label>
       <div
         class="game"
         in:fly={{ duration: 200, y: 20 }}
@@ -113,18 +114,20 @@
         on:outroend={() => (ready = true)}>
         <div class="card-container">
           <Card
+            active={choicesActive}
             on:select={() => submit(a, b, 1)}
             celeb={a}
             showprice={!!last_result}
             winner={a.price >= b.price} />
         </div>
         <div>
-          <button on:click={() => submit(a, b, 0)} class="same">
+          <button on:click={() => submit(a, b, 0)} class="same" class:sameActive={choicesActive}>
             Same price
           </button>
         </div>
         <div class="card-container">
           <Card
+            active={choicesActive}
             on:select={() => submit(a, b, -1)}
             celeb={b}
             showprice={!!last_result}
@@ -163,6 +166,8 @@
 <style>
   .game-container {
     flex: 1;
+    display: flex;
+    flex-direction: column;
   }
   .game {
     display: grid;
@@ -181,6 +186,13 @@
     width: 100%;
     align-items: center;
     margin: 0;
+    pointer-events: none;
+    opacity: 0.5;
+    transition: opacity 400ms linear;
+  }
+  .sameActive{
+    pointer-events: all;
+    opacity: 1;
   }
   .game .card-container button {
     width: 100%;
@@ -236,10 +248,6 @@
   .done strong {
     font-size: 6em;
     font-weight: 700;
-  }
-
-  .checked {
-    display: none;
   }
 
   label {

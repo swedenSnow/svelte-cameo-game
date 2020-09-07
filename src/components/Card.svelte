@@ -5,15 +5,16 @@
   export let celeb;
   export let showprice;
   export let winner;
+  export let active;
 
   const dispatch = createEventDispatcher();
 </script>
 
-<div class="card-outer">
+<div class="card-outer" class:active>
   <button
     class="card-inner"
-    style="background-image: url({celeb.image})"
-    on:click={() => dispatch('select')}>
+    style="background-color:#393939; background-image: url({celeb.image})"
+    on:click|once={() => dispatch('select')}>
     <div class="details">
       <h2>
         <a target="_blank" href="https://cameo.com/{celeb.id}">{celeb.name}</a>
@@ -34,6 +35,9 @@
   .card-outer {
     width: 100%;
     height: 100%;
+    transition: opacity 400ms linear;
+    opacity: 0.5;
+    pointer-events: none;
   }
   .card-inner {
     position: absolute;
@@ -48,6 +52,10 @@
     text-align: center;
     border-radius: var(--border-radius);
     box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.2);
+  }
+  .active{
+    pointer-events: all;
+    opacity: 1;
   }
 
   .details {
